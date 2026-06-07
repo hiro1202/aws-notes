@@ -1,3 +1,35 @@
 site_name: AWS Notes
 theme:
   name: material
+
+plugins:
+  - search
+  - macros
+
+markdown_extensions:
+  - admonition
+
+nav:
+  - ホーム: index.md
+  - Fargate 料金早見表: fargate.md
+
+# 早見表の基準値（ここを変えると表の数値が再計算される）
+extra:
+  usd_jpy: 160          # 1 USD あたりの円
+  hours_per_month: 730  # 月間稼働時間
+  fargate:
+    x86:
+      vcpu_hr: 0.05056  # USD / vCPU / 時間
+      gb_hr: 0.00553    # USD / GB / 時間
+    arm:
+      vcpu_hr: 0.04045
+      gb_hr: 0.00442
+  # vCPU ごとに設定可能なメモリ(GB)。mem を直接列挙するか min/max/step で範囲指定
+  fargate_specs:
+    - {vcpu: 0.25, mem: [0.5, 1, 2]}
+    - {vcpu: 0.5, min: 1, max: 4, step: 1}
+    - {vcpu: 1, min: 2, max: 8, step: 1}
+    - {vcpu: 2, min: 4, max: 16, step: 1}
+    - {vcpu: 4, min: 8, max: 30, step: 1}
+    - {vcpu: 8, min: 16, max: 60, step: 4}
+    - {vcpu: 16, min: 32, max: 120, step: 8}

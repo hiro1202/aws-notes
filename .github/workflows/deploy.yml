@@ -9,6 +9,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  NO_MKDOCS_2_WARNING: "true"  # mkdocs-material の MkDocs 2.0 告知バナーを抑制
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
