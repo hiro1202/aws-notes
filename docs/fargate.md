@@ -11,6 +11,7 @@
 
 !!! note
     金額は 1 タスクを 1 か月（{{ hours_per_month }} 時間）連続稼働させた場合の概算です。月額（円）は丸め前の USD から計算しています。セルは月額（円）。
+    最新の単価は公式の [AWS Fargate 料金](https://aws.amazon.com/fargate/pricing/) を確認してください。
 
 ## 設定可能な vCPU / メモリの組み合わせ
 
