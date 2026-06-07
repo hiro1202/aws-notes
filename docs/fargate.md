@@ -1,6 +1,6 @@
 # Fargate 料金早見表
 
-リージョン: **{{ region }}** / 条件: Linux
+リージョン: **{{ region }}** / OS: Linux
 
 基準値（変更は `mkdocs.yml` の `extra:` で一括）:
 
@@ -10,25 +10,67 @@
 - ARM: vCPU **{{ fargate.arm.vcpu_hr }}** USD/時、メモリ **{{ fargate.arm.gb_hr }}** USD/GB/時
 
 !!! note
-    金額は **1 タスクを 1 か月（{{ hours_per_month }} 時間）連続稼働**させた場合の概算です。CPU/メモリ列の USD は表示上 2 桁に丸めていますが、円換算は丸め前の値で計算しています。
+    金額は 1 タスクを 1 か月（{{ hours_per_month }} 時間）連続稼働させた場合の概算です。月額（円）は丸め前の USD から計算しています。
 
-{% macro fargate_table(price) -%}
-| vCPU (ユニット) | メモリ (GB) | vCPU 料金 (USD) | メモリ料金 (USD) | 合計 (USD) | 月額 (円) |
-|---|---|---|---|---|---|
-{% for cpu, mem in fargate_sizes -%}
-{% set vcpu = cpu / 1024 -%}
-{% set gb = mem / 1024 -%}
-{% set cpu_usd = vcpu * price.vcpu_hr * hours_per_month -%}
-{% set mem_usd = gb * price.gb_hr * hours_per_month -%}
-{% set total = cpu_usd + mem_usd -%}
-| {{ vcpu }} ({{ cpu }}) | {{ gb }} ({{ mem }} MB) | {{ "%.2f"|format(cpu_usd) }} | {{ "%.2f"|format(mem_usd) }} | {{ "%.2f"|format(total) }} | {{ "{:,.0f}".format(total * usd_jpy) }} |
+## 設定可能な vCPU / メモリの組み合わせ
+
+| vCPU | メモリ | 刻み |
+|---|---|---|
+{% for s in fargate_specs -%}
+{% if s.mem -%}
+| {{ s.vcpu }} | {{ s.mem | join(", ") }} GB | 個別 |
+{% else -%}
+| {{ s.vcpu }} | {{ s.min }} 〜 {{ s.max }} GB | {{ s.step }} GB |
+{% endif -%}
+{% endfor %}
+
+{# --- レイアウトA: vCPU別コンパクト表 --- #}
+{% macro compact_tables(price) -%}
+{% for s in fargate_specs -%}
+{% set mems = s.mem if s.mem else range(s.min, s.max + 1, s.step) | list %}
+#### {{ s.vcpu }} vCPU
+
+| メモリ (GB) | 合計 (USD) | 月額 (円) |
+|---|---|---|
+{% for gb in mems -%}
+{% set usd = (s.vcpu * price.vcpu_hr + gb * price.gb_hr) * hours_per_month -%}
+| {{ gb }} | {{ "%.2f" | format(usd) }} | {{ "{:,.0f}".format(usd * usd_jpy) }} |
+{% endfor %}
 {% endfor %}
 {%- endmacro %}
 
-## Linux / x86
+{# --- レイアウトB: マトリクス（行=vCPU, 列=メモリGB, セル=月額円） --- #}
+{% macro matrix_table(price) -%}
+{% set cols = [] -%}
+{% for s in fargate_specs -%}
+{% set mems = s.mem if s.mem else range(s.min, s.max + 1, s.step) | list -%}
+{% for m in mems -%}{% if m not in cols %}{% set _ = cols.append(m) %}{% endif %}{% endfor -%}
+{% endfor -%}
+{% set cols = cols | sort -%}
+| vCPU ＼ メモリGB |{% for c in cols %} {{ c }} |{% endfor %}
+|---|{% for c in cols %}---:|{% endfor %}
+{% for s in fargate_specs -%}
+{% set mems = s.mem if s.mem else range(s.min, s.max + 1, s.step) | list -%}
+| {{ s.vcpu }} |{% for c in cols %}{% if c in mems %}{% set usd = (s.vcpu * price.vcpu_hr + c * price.gb_hr) * hours_per_month %} {{ "{:,.0f}".format(usd * usd_jpy) }} |{% else %} — |{% endif %}{% endfor %}
+{% endfor %}
+{%- endmacro %}
 
-{{ fargate_table(fargate.x86) }}
+## レイアウトA: vCPU別コンパクト表
 
-## Linux / ARM
+### Linux / x86
 
-{{ fargate_table(fargate.arm) }}
+{{ compact_tables(fargate.x86) }}
+
+### Linux / ARM
+
+{{ compact_tables(fargate.arm) }}
+
+## レイアウトB: マトリクス表（セル = 月額円）
+
+### Linux / x86
+
+{{ matrix_table(fargate.x86) }}
+
+### Linux / ARM
+
+{{ matrix_table(fargate.arm) }}
