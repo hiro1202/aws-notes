@@ -1,3 +1,32 @@
 site_name: AWS Notes
 theme:
   name: material
+
+plugins:
+  - search
+  - macros
+
+nav:
+  - ホーム: index.md
+  - Fargate 料金早見表: fargate.md
+
+# 早見表の基準値（ここを変えると表の数値が再計算される）
+extra:
+  region: 東京 (ap-northeast-1)
+  usd_jpy: 150          # 1 USD あたりの円
+  hours_per_month: 720  # 月間稼働時間
+  fargate:
+    x86:
+      vcpu_hr: 0.05056  # USD / vCPU / 時間
+      gb_hr: 0.00553    # USD / GB / 時間
+    arm:
+      vcpu_hr: 0.04045
+      gb_hr: 0.00442
+  # 早見表に並べる (CPUユニット, メモリMB) の組み合わせ
+  fargate_sizes:
+    - [256, 512]
+    - [512, 1024]
+    - [1024, 2048]
+    - [2048, 4096]
+    - [4096, 8192]
+    - [8192, 16384]
