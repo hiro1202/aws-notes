@@ -2,7 +2,7 @@
 
 リージョン: **{{ region }}** / OS: Linux
 
-基準値（変更は `mkdocs.yml` の `extra:` で一括）:
+前提条件:
 
 - 為替レート: **1 USD = {{ usd_jpy }} 円**
 - 月間稼働時間: **{{ hours_per_month }} 時間**

@@ -6,6 +6,9 @@ plugins:
   - search
   - macros
 
+markdown_extensions:
+  - admonition
+
 nav:
   - ホーム: index.md
   - Fargate 料金早見表: fargate.md
