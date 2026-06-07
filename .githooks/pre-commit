@@ -1,0 +1,6 @@
+#!/bin/sh
+# strict ビルドが通らなければコミットを中止する
+mkdocs build --strict --quiet || {
+  echo "mkdocs build --strict に失敗したためコミットを中止しました" >&2
+  exit 1
+}
