@@ -13,8 +13,8 @@ nav:
 # 早見表の基準値（ここを変えると表の数値が再計算される）
 extra:
   region: 東京 (ap-northeast-1)
-  usd_jpy: 150          # 1 USD あたりの円
-  hours_per_month: 720  # 月間稼働時間
+  usd_jpy: 160          # 1 USD あたりの円
+  hours_per_month: 730  # 月間稼働時間
   fargate:
     x86:
       vcpu_hr: 0.05056  # USD / vCPU / 時間
