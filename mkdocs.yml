@@ -25,6 +25,37 @@ extra:
     arm:
       vcpu_hr: 0.04045
       gb_hr: 0.00442
+  # コンピューティング比較（2 vCPU / 4 GB 相当・東京・オンデマンド・2026年7月時点）
+  # 単価は AWS Price List API (ap-northeast-1) から取得
+  compute_services:
+    - name: EC2
+      target: c7i.large / c7g.large
+      spec: 2 vCPU / 4 GB
+      x86_hr: 0.11235
+      arm_hr: 0.0910
+      billing: 秒（最低 60 秒）
+      idle: 課金される
+    - name: Fargate (ECS)
+      target: 2 vCPU / 4 GB タスク
+      spec: 2 vCPU / 4 GB
+      x86_hr: 0.12324   # 2×0.05056 + 4×0.00553
+      arm_hr: 0.09858   # 2×0.04045 + 4×0.00442
+      billing: 秒（最低 1 分）
+      idle: 課金される
+    - name: Lambda
+      target: メモリ 4 GB 設定
+      spec: 4 GB（CPU は比例配分 ≒ 2.2 vCPU）
+      x86_hr: 0.2400    # 0.0000166667 USD/GB秒 × 3600 × 4
+      arm_hr: 0.1920    # 0.0000133334 USD/GB秒 × 3600 × 4
+      billing: 1 ミリ秒 ＋ リクエスト課金
+      idle: 課金されない
+    - name: CodeBuild
+      target: general1.small / arm1.small
+      spec: 2 vCPU / 3 GB
+      x86_hr: 0.3000    # 0.005 USD/分 × 60
+      arm_hr: 0.2550    # 0.00425 USD/分 × 60
+      billing: 分
+      idle: 課金されない（ジョブ実行中のみ）
   # vCPU ごとに設定可能なメモリ(GB)。mem を直接列挙するか min/max/step で範囲指定
   fargate_specs:
     - {vcpu: 0.25, mem: [0.5, 1, 2]}
