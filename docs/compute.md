@@ -17,14 +17,26 @@
 
 ---
 
-## ぱっと見比較（x86・常時稼働換算）
+## ぱっと見比較（常時稼働換算）
 
-| サービス | 月額の目安（円） | EC2 比 | |
+倍率とバーはどちらの表も **EC2 (x86) = 1.00** 基準。表をまたいで長さをそのまま比べられる。
+
+{% macro glance_table(attr) -%}
+| サービス | 月額の目安（円） | EC2 (x86) 比 | |
 |---|---:|---:|:---|
 {% for s in compute_services -%}
-{% set ratio = s.x86_hr / ec2.x86_hr -%}
-| {{ s.name }} | {{ "{:,.0f}".format(s.x86_hr * hours_per_month * usd_jpy) }} | {{ "{:.2f}".format(ratio) }} 倍 | {{ "█" * ((ratio * 6) | round | int) }} |
+{% set ratio = s[attr] / ec2.x86_hr -%}
+| {{ s.name }} | {{ "{:,.0f}".format(s[attr] * hours_per_month * usd_jpy) }} | {{ "{:.2f}".format(ratio) }} 倍 | {{ "█" * ((ratio * 6) | round | int) }} |
 {% endfor %}
+{%- endmacro %}
+
+### x86
+
+{{ glance_table("x86_hr") }}
+
+### ARM (Graviton)
+
+{{ glance_table("arm_hr") }}
 
 ---
 
