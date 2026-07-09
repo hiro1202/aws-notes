@@ -12,6 +12,7 @@ markdown_extensions:
 nav:
   - ホーム: index.md
   - Fargate 料金早見表: fargate.md
+  - コンピューティング料金比較: compute.md
 
 # 早見表の基準値（ここを変えると表の数値が再計算される）
 extra:
