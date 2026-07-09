@@ -2,93 +2,50 @@
 
 「同じくらいのコンピューティングリソース（2 vCPU / 4 GB 相当）を 1 ヶ月動かしたらいくらか」に揃えて、主要コンピューティングサービスの価格差を比較する。
 
-{% set ec2 = compute_services | selectattr("name", "equalto", "EC2") | first %}
-{% set lambda_ = compute_services | selectattr("name", "equalto", "Lambda") | first %}
-
 ---
 
 ## 結論
 
 常時稼働に換算すると、だいたいこの順で高くなる。
 
-**EC2 （1.0）＜ Fargate（×{{ "{:.1f}".format(compute_services[1].arm_hr / ec2.arm_hr) }}）＜ Lambda（×{{ "{:.1f}".format(lambda_.arm_hr / ec2.arm_hr) }}）＜ CodeBuild（×{{ "{:.1f}".format(compute_services[3].arm_hr / ec2.arm_hr) }}）**
+**EC2 （1.0）＜ Fargate（×1.1）＜ Lambda（×2.1）＜ CodeBuild（×2.8）**
 
-ただしこれは「1 か月動かし続けた場合」の話。単価が高いサービスほど課金の粒度が細かく、止まっている時間は課金されないので、稼働率が低いほど順位は逆転する（後述）。
+ただしこれは「1 か月動かし続けた場合」の話。単価が高いサービスほど課金の粒度が細かく、止まっている時間は課金されないので、稼働率が低いほど順位は逆転する。
 
 ---
 
 ## ぱっと見比較（常時稼働換算）
 
-倍率とバーはどちらの表も **EC2 (ARM) = 1.00** 基準。表をまたいで長さをそのまま比べられる。
+倍率とバーは **EC2 = 1.00** 基準。
 
-{% macro glance_table(attr) -%}
-| サービス | 月額の目安（円） | EC2 (ARM) 比 | |
+| サービス | 月額の目安（円） | EC2 比 | |
 |---|---:|---:|:---|
-{% for s in compute_services -%}
-{% set ratio = s[attr] / ec2.arm_hr -%}
-| {{ s.name }} | {{ "{:,.0f}".format(s[attr] * hours_per_month * usd_jpy) }} | {{ "{:.2f}".format(ratio) }} 倍 | {{ "█" * ((ratio * 6) | round | int) }} |
-{% endfor %}
-{%- endmacro %}
-
-### ARM (Graviton)
-
-{{ glance_table("arm_hr") }}
-
-### x86
-
-{{ glance_table("x86_hr") }}
+| EC2 | 10,629 | 1.00 倍 | ██████ |
+| Fargate (ECS) | 11,514 | 1.08 倍 | ██████ |
+| Lambda | 22,426 | 2.11 倍 | █████████████ |
+| CodeBuild | 29,784 | 2.80 倍 | █████████████████ |
 
 ---
 
 ## 詳細比較
 
-| サービス | 比較対象 | スペック | ARM (USD/時) | x86 (USD/時) | 課金単位 | アイドル時 |
-|---|---|---|---:|---:|---|---|
-{% for s in compute_services -%}
-| {{ s.name }} | {{ s.target }} | {{ s.spec }} | {{ "{:.5f}".format(s.arm_hr) }} | {{ "{:.5f}".format(s.x86_hr) }} | {{ s.billing }} | {{ s.idle }} |
-{% endfor %}
-
-!!! tip "x86 を選ぶと"
-    どのサービスでも同じ傾向で、**ARM (Graviton) より 15〜25% 高い**。相対的な順位は変わらない。
-
----
-
-## 稼働率で順位が逆転する
-
-{% set be_hours = ec2.arm_hr * hours_per_month / lambda_.arm_hr %}
-単価の高さは「使った分しか払わない」ことの対価なので、常時動かさないなら話が変わる。
-
-- Lambda の実行単価は EC2 の約 {{ "{:.1f}".format(lambda_.arm_hr / ec2.arm_hr) }} 倍。逆に言うと、**実行時間が月 {{ "{:,.0f}".format(be_hours) }} 時間（稼働率 {{ "{:.0f}".format(be_hours / hours_per_month * 100) }}%、1 日あたり約 {{ "{:.0f}".format(be_hours / 30.4) }} 時間）を下回るなら Lambda のほうが安い**。
-- EC2 / Fargate はアイドル中も課金される。Lambda / CodeBuild は動いた分だけ。
-- CodeBuild は常時稼働の選択肢ではなく「ビルドジョブの実行時間だけ」払うサービス。1 日に数十分しか回らない CI にサーバーを 1 台占有させるより安い、という文脈で見る。
-
----
-
-## 単価差は何の値段か
-
-上に行くほど、AWS に任せる範囲（＝自分でやらなくていい運用）が広い。
-
-| サービス | 自分でやらなくていいこと |
-|---|---|
-| EC2 | ハードウェアの調達だけ |
-| Fargate | ＋ OS・ホストのパッチ、AMI 管理、キャパシティ管理 |
-| Lambda | ＋ スケーリング、リクエストルーティング、イベント統合 |
-| CodeBuild | ＋ ビルド環境のプロビジョニングと破棄 |
-
-つまり単価差 ≒ 運用の外注費。EC2 が一番安いのは「一番自分でやることが多い」から。
+| サービス | 比較対象 | スペック | 単価 (USD/時) | 課金単位 | アイドル時 |
+|---|---|---|---:|---|---|
+| EC2 | c7g.large | 2 vCPU / 4 GB | 0.09100 | 秒（最低 60 秒） | 課金される |
+| Fargate (ECS) | 2 vCPU / 4 GB タスク | 2 vCPU / 4 GB | 0.09858 | 秒（最低 1 分） | 課金される |
+| Lambda | メモリ 4 GB 設定 | 4 GB（CPU は比例配分 ≒ 2.2 vCPU） | 0.19200 | 1 ミリ秒 ＋ リクエスト課金 | 課金されない |
+| CodeBuild | arm1.small | 2 vCPU / 3 GB | 0.25500 | 分 | 課金されない（ジョブ実行中のみ） |
 
 ---
 
 ## 前提条件
 
 - リージョン: 東京 (ap-northeast-1)、Linux、オンデマンド
-- 為替レート: 1 USD = {{ usd_jpy }} 円、月間 {{ hours_per_month }} 時間
-- スペックは 2 vCPU / 4 GB 相当に正規化（CodeBuild small は 2 vCPU / 3 GB、Lambda はメモリ 4 GB 設定 ≒ 2.2 vCPU 相当）
-- 単価は 2026 年 7 月時点、AWS Price List API から取得
-- Lambda のリクエスト課金（$0.20 / 100 万件）と無料枠、EC2 の EBS 代は含まない
-
-!!! note "さらに安くする手段は別枠"
-    ここは全部「定価（オンデマンド）」の比較。EC2 / Fargate はスポットで最大 7 割引、Savings Plans で 2〜5 割引になる。また EC2 には t3.medium（2 vCPU / 4 GB で $0.0544/時、ただしバースト型で CPU 常用は不可）のような変則枠もある。
+- アーキテクチャ: ARM (Graviton)
+- 為替レート: 1 USD = 160 円、月間 730 時間
+- スペックは 2 vCPU / 4 GB 相当
+- 単価は 2026 年 7 月時点
+- Lambda のリクエスト課金と無料枠、EC2 の EBS 代は含まない
 
 ---
 
