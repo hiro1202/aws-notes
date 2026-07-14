@@ -39,6 +39,8 @@
 | Lambda | メモリ 4 GB 設定 | 4 GB（CPU はメモリに比例して割当） | 0.19200 | 1 ミリ秒 | 最大 15 分 / 実行 |
 | CodeBuild | arm1.small | 2 vCPU / 3 GB | 0.255 | 分 | 最大 36 時間 / ビルド |
 
+※ CodeBuild の `arm1.small` のメモリ容量は、[ビルド環境のコンピューティングモードおよびタイプ](https://docs.aws.amazon.com/ja_jp/codebuild/latest/userguide/build-env-ref-compute-types.html)およびマネジメントコンソールでは 4 GiB と記載されている。一方、[AWS CodeBuild の料金ページ](https://aws.amazon.com/codebuild/pricing/)では、OS などが使用する領域を除いた、実際にビルドで利用可能なメモリ容量として 3 GB と記載されている。
+
 ---
 
 ## 出典
